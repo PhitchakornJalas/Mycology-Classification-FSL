@@ -28,7 +28,7 @@ def plot_episode(args) -> None:
     seed=None,
   )
 
-  val_dataset: EpisodicDataset = EpisodicDataset(
+  val_dataset = EpisodicDataset(
     pool_json_path=POOL_PATH,
     split="val",
     project_root=PROJECT_ROOT,
