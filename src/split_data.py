@@ -9,7 +9,10 @@ DATA_DIR = PROJECT_ROOT / "data"
 PLOT_PATH = PROJECT_ROOT / "plots"
 
 def split_data(args):
-  df = pd.read_csv(f"{DATA_DIR}/{args.filename}")
+  csv_path = DATA_DIR / f"{args.filename}"
+  if not csv_path.exists():
+    raise FileNotFoundError(f"Not Found {csv_path} (please run build_registry and --export True)")
+  df = pd.read_csv(csv_path)
 
   n = int(0.2 * len(df.index))
   remain, test = train_test_split(df, test_size=n, stratify=df["label"], random_state=args.seed)
@@ -62,12 +65,14 @@ def split_data(args):
   plt.show()
 
   if args.export:
-    train.to_csv(f"{DATA_DIR}/train_{Path(args.filename).stem}.csv", index=False)
-    val.to_csv(f"{DATA_DIR}/val_{Path(args.filename).stem}.csv", index=False)
-    test.to_csv(f"{DATA_DIR}/test_{Path(args.filename).stem}.csv", index=False)
+    stem = Path(args.filename).stem
+
+    train.to_csv(f"{DATA_DIR}/train_{stem}.csv", index=False)
+    val.to_csv(f"{DATA_DIR}/val_{stem}.csv", index=False)
+    test.to_csv(f"{DATA_DIR}/test_{stem}.csv", index=False)
     
     PLOT_PATH.mkdir(parents=True, exist_ok=True)
-    plt.savefig(f"{PLOT_PATH}/classdist_{Path(args.filename).stem}.svg", format="svg")
+    plt.savefig(f"{PLOT_PATH}/classdist_{stem}.svg", format="svg")
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description="Split Data")
