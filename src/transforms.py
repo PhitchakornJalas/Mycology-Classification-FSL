@@ -34,7 +34,12 @@ class ImageTransformBuilder:
     self.use_normalize = use_normalize
 
   def get_train_transform(self) -> transforms.Compose:
-    """Build image transformations for the training split."""
+    """
+    Build image transformations for the training split.
+    
+    Returns:
+      A torchvision Compose pipeline configured for training images.
+    """
     ops = []
 
     if self.use_augmentation:
@@ -54,7 +59,12 @@ class ImageTransformBuilder:
     return transforms.Compose(ops)
 
   def get_eval_transform(self) -> transforms.Compose:
-    """Build deterministic image transformations for the validation and test splits."""
+    """
+    Build deterministic image transformations for the validation and test splits.
+
+    Returns:
+      A torchvision Compose pipeline configured for deterministic evaluation images.
+    """
     resize_dim = int(self.img_size * 1.14)
 
     ops = [
@@ -72,6 +82,12 @@ class ImageTransformBuilder:
     """
     Revert a normalized tensor back to the [0, 1] range for visualization with matplotlib.
     Supports both 3D [C, H, W] and 4D [B, C, H, W] tensors.
+
+    Args:
+      tensor: Normalized image tensor of shape [C, H, W] or [B, C, H, W].
+
+    Returns:
+      A clamped image tensor with values scaled back to the [0, 1] range.
     """
     if not self.use_normalize:
       return tensor.clamp(0, 1)
