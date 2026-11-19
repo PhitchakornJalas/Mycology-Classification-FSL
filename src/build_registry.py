@@ -21,13 +21,22 @@ def build_registry(args):
       "label": label,
     })
 
+  unique_labels = sorted({r["label"] for r in records if "label" in r})
+  index2label = dict(zip(range(len(unique_labels)), unique_labels))
+  label2index = dict(zip(unique_labels, range(len(unique_labels))))
+
+  for r in records:
+    r["label"] = label2index[r["label"]]
+
   df = pd.DataFrame(records)
   if args.export:
     df.to_csv(REGISTRY_PATH, index=False)
     print(f"\n[SAVED] {REGISTRY_PATH}")
-    
+  
   print(f"({len(df)} rows)")
   print(df["label"].value_counts())
+  print(f"index2label: {index2label}")
+  print(f"label2index: {label2index}")
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description="Build Regitry File")
