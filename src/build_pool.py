@@ -7,7 +7,8 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 
 def df_to_pool(df: pd.DataFrame) -> dict[str, list[str]]:
-  """Convert a split DataFrame into a mapping from class label to image file paths.
+  """
+  Convert a split DataFrame into a mapping from class label to image file paths.
 
   Args:
     df: DataFrame containing at least 'label' and 'img_filepath' columns.
@@ -23,7 +24,8 @@ def df_to_pool(df: pd.DataFrame) -> dict[str, list[str]]:
   )
 
 def build_pools(args):
-  """Build episodic data pools for train, val, and test splits from CSV files.
+  """
+  Build episodic data pools for train, val, and test splits from CSV files.
 
   Args:
     args: Parsed command-line arguments containing 'filename' and 'export'.
