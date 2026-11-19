@@ -6,7 +6,16 @@ import argparse
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 
-def df_to_pool(df):
+def df_to_pool(df: pd.DataFrame) -> dict[str, list[str]]:
+  """Convert a split DataFrame into a mapping from class label to image file paths.
+
+  Args:
+    df: DataFrame containing at least 'label' and 'img_filepath' columns.
+
+  Returns:
+    A dictionary mapping each class label to a list of image file paths.
+  """
+  
   return (
     df.groupby("label")["img_filepath"]
     .apply(list)
@@ -14,6 +23,15 @@ def df_to_pool(df):
   )
 
 def build_pools(args):
+  """Build episodic data pools for train, val, and test splits from CSV files.
+
+  Args:
+    args: Parsed command-line arguments containing 'filename' and 'export'.
+
+  Raises:
+    FileNotFoundError: If any expected split CSV file does not exist.
+  """
+
   stem = Path(args.filename).stem
   splits = ["train", "val", "test"]
   pools = {}
