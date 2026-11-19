@@ -9,6 +9,15 @@ DATA_DIR = PROJECT_ROOT / "data"
 PLOT_PATH = PROJECT_ROOT / "plots"
 
 def split_data(args):
+  """Split registry data into stratified train, validation, and test sets, display distributions, and optionally export results.
+
+  Args:
+    args: Parsed command-line arguments containing 'filename', 'seed', and 'export'.
+
+  Raises:
+    FileNotFoundError: If the specified registry CSV file does not exist.
+  """
+  
   csv_path = DATA_DIR / f"{args.filename}"
   if not csv_path.exists():
     raise FileNotFoundError(f"Not Found {csv_path} (please run build_registry and --export True)")
