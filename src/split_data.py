@@ -24,9 +24,32 @@ def split_data(args):
     raise FileNotFoundError(f"Not Found {csv_path} (please run build_registry and --export True)")
   df = pd.read_csv(csv_path)
 
-  n = int(0.2 * len(df.index))
-  remain, test = train_test_split(df, test_size=n, stratify=df["label"], random_state=args.seed)
-  train, val = train_test_split(remain, test_size=n, stratify=remain["label"], random_state=args.seed)
+  train_parts = []
+  val_parts = []
+  test_parts = []
+
+  for label, group in df.groupby("label", sort=True):
+    n_cls = len(group)
+    if n_cls < args.min_samples * 3:
+      raise ValueError(f"Label '{label}' has only {n_cls} samples (need >= {args.min_samples * 3})")
+
+    n_test = max(args.min_samples, round(n_cls * 0.2))
+    n_val = max(args.min_samples, round(n_cls * 0.2))
+
+    if n_cls - n_test - n_val < args.min_samples:
+      n_val = (n_cls - args.min_samples) // 2
+      n_test = n_cls - args.min_samples - n_val
+
+    remain, test_g = train_test_split(group, test_size=n_test, random_state=args.seed)
+    train_g, val_g = train_test_split(remain, test_size=n_val, random_state=args.seed)
+
+    train_parts.append(train_g)
+    val_parts.append(val_g)
+    test_parts.append(test_g)
+
+  train: pd.DataFrame = pd.concat(train_parts, ignore_index=True)
+  val: pd.DataFrame = pd.concat(val_parts, ignore_index=True)
+  test: pd.DataFrame = pd.concat(test_parts, ignore_index=True)
 
   train_dist = train.groupby("label").size().reset_index(name="#")
   train_dist["%"] = train_dist["#"] / train_dist["#"].sum()
@@ -72,8 +95,6 @@ def split_data(args):
   ax[2].set_ylim(0, 1)
   ax[2].set_title("Test Data")
 
-  plt.show()
-
   if args.export:
     stem = Path(args.filename).stem
 
@@ -84,11 +105,14 @@ def split_data(args):
     PLOT_PATH.mkdir(parents=True, exist_ok=True)
     plt.savefig(f"{PLOT_PATH}/classdist_{stem}.svg", format="svg")
 
+  plt.show()
+
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description="Split Data")
   parser.add_argument("--filename", type=str, default="registry.csv", help="Name of registry file .csv")
+  parser.add_argument("--min_samples", type=int, default=2, help="Minimum samples per class in each split")
   parser.add_argument("--seed", type=int, default=224, help="Random seed for reproducibility")
-  parser.add_argument("--export", type=bool, default=False, help="Enable export=True if you want to create a new train/val/test")
+  parser.add_argument("--export", action="store_true", help="Enable if you want to create a new train/val/test")
 
   args = parser.parse_args()
   split_data(args)
