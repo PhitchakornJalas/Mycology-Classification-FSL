@@ -11,7 +11,14 @@ def build_registry(args):
   REGISTRY_PATH = DATA_DIR / args.filename
   REGISTRY_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-  image_files = sorted(DATA_DIR.glob(f"{args.dataset}/*/*.png"))
+  dataset_dir = DATA_DIR / args.dataset
+  if not dataset_dir.exists():
+    raise FileNotFoundError(f"Not Found {dataset_dir} (please download dataset)")
+  
+  image_files = sorted(dataset_dir.glob("*/*.*"))
+
+  if not image_files:
+    raise FileNotFoundError(f"No image files found inside {dataset_dir}")
 
   records = []
   for img_path in tqdm(image_files, desc="Building Registry"):
@@ -31,10 +38,12 @@ def build_registry(args):
 
   df = pd.DataFrame(records)
   if args.export:
+    stem = Path(args.filename).stem
+
     df.to_csv(REGISTRY_PATH, index=False)
-    with open(f"{DATA_DIR}/label2index_{Path(args.filename).stem}.json", "w") as f:
+    with open(f"{DATA_DIR}/label2index_{stem}.json", "w") as f:
       json.dump(label2index, f)
-    with open(f"{DATA_DIR}/index2label_{Path(args.filename).stem}.json", "w") as f:
+    with open(f"{DATA_DIR}/index2label_{stem}.json", "w") as f:
       json.dump(index2label, f)
     print(f"\n[SAVED] {REGISTRY_PATH}")
   
