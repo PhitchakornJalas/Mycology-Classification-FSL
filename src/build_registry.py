@@ -25,7 +25,11 @@ def build_registry(args):
   if not dataset_dir.exists():
     raise FileNotFoundError(f"Not Found {dataset_dir} (please download dataset)")
   
-  image_files = sorted(dataset_dir.glob("*/*.*"))
+  IMAGE_EXTS = {".jpg", ".jpeg", ".png"}
+  image_files: list[Path] = sorted(
+    p for p in dataset_dir.glob("*/*")
+    if p.is_file() and not p.name.startswith(".") and p.suffix.lower() in IMAGE_EXTS
+  )
 
   if not image_files:
     raise FileNotFoundError(f"No image files found inside {dataset_dir}")
