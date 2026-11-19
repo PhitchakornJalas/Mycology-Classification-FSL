@@ -6,6 +6,7 @@ import torch
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 from torchvision import transforms
+import matplotlib.pyplot as plt
 
 class EpisodicDataset(Dataset):
   def __init__(
@@ -100,6 +101,81 @@ class EpisodicDataset(Dataset):
       img = self.transform(img)
     return img
 
+def plot_episode(episode, max_query_show=5, save_path=None):
+  support_x = episode["support_x"]       # [N*K, C, H, W]
+  query_x = episode["query_x"]           # [N*Q, C, H, W]
+  class_names = episode["class_names"]   # list ของชื่อคลาสยาว N
+
+  n_way = len(class_names)
+  k_shot = support_x.shape[0] // n_way
+  q_query = query_x.shape[0] // n_way
+  q_show = min(q_query, max_query_show)  # จำกัดจำนวนรูป Query ที่โชว์ไม่ให้กว้างล้นจอ
+
+  sorted_order = sorted(range(n_way), key=lambda i: class_names[i])
+
+  total_cols = k_shot + q_show
+  fig, axes = plt.subplots(
+    nrows=n_way,
+    ncols=total_cols,
+    figsize=(total_cols * 2.2, n_way * 2.4),
+  )
+
+  # ป้องกันกรณี n_way=1 หรือ total_cols=1 ที่ axes จะไม่เป็น 2D array
+  if n_way == 1:
+    axes = axes[None, :]
+  if total_cols == 1:
+    axes = axes[:, None]
+
+  for row_idx, cls_name in enumerate(sorted_order):
+    # 1. วาดรูปฝั่ง Support Set
+    for s_idx in range(k_shot):
+      img_tensor = support_x[row_idx * k_shot + s_idx]
+      # แปลง Tensor [C, H, W] -> Numpy [H, W, C] และ clip ค่าให้อยู่ในช่วง [0, 1]
+      img_np = img_tensor.permute(1, 2, 0).cpu().numpy().clip(0, 1)
+
+      ax = axes[row_idx, s_idx]
+      ax.imshow(img_np)
+      ax.set_xticks([])
+      ax.set_yticks([])
+
+      if row_idx == 0:
+        ax.set_title(f"Support {s_idx + 1}", fontsize=10, fontweight="bold", color="#1f77b4")
+      if s_idx == 0:
+        ax.set_ylabel(f"Label {row_idx}\n({cls_name})", fontsize=10, fontweight="bold")
+
+    # 2. วาดรูปฝั่ง Query Set (เลือกมาโชว์ q_show รูปแรก)
+    for q_idx in range(q_show):
+      col_idx = k_shot + q_idx
+      img_tensor = query_x[row_idx * q_query + q_idx]
+      img_np = img_tensor.permute(1, 2, 0).cpu().numpy().clip(0, 1)
+
+      ax = axes[row_idx, col_idx]
+      ax.imshow(img_np)
+      ax.set_xticks([])
+      ax.set_yticks([])
+
+      # ใส่กรอบสีส้มบางๆ ให้แยกฝั่ง Query ออกจาก Support ชัดเจน
+      for spine in ax.spines.values():
+        spine.set_edgecolor("#ff7f0e")
+        spine.set_linewidth(1.5)
+
+      if row_idx == 0:
+        ax.set_title(f"Query {q_idx + 1}", fontsize=10, fontweight="bold", color="#ff7f0e")
+
+  plt.suptitle(
+    f"Episode Preview: {n_way}-Way {k_shot}-Shot (Showing {q_show}/{q_query} Queries)",
+    fontsize=13,
+    fontweight="bold",
+  )
+  plt.tight_layout()
+
+  if save_path:
+    Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(save_path, bbox_inches="tight")
+    print(f"Saved episode preview to: {save_path}")
+
+  plt.show()
+
 if __name__ == "__main__":
   PROJECT_ROOT = Path(__file__).resolve().parent.parent
   POOL_PATH = PROJECT_ROOT / "data" / "pools_registry.json"
@@ -131,92 +207,11 @@ if __name__ == "__main__":
   train_loader = DataLoader(train_dataset, batch_size=None, num_workers=2, pin_memory=False)
   val_loader = DataLoader(val_dataset, batch_size=None, num_workers=2, pin_memory=False)
 
-  episode = next(iter(val_loader))
+  episode = next(iter(train_loader))
   print("Classes in episode:", episode["class_names"])
   print("Support X shape   :", episode["support_x"].shape)
   print("Support Y         :", episode["support_y"])     
   print("Query X shape     :", episode["query_x"].shape)  
   print("Query Y shape     :", episode["query_y"].shape)
-
-  import matplotlib.pyplot as plt
-
-  def plot_episode(episode, max_query_show=5, save_path=None):
-    """
-    วาดกราฟแสดงภาพใน 1 Episode แยกแถวตามคลาส (N-way)
-    และแยกคอลัมน์ระหว่าง Support Set (K-shot) กับ Query Set (แสดงสูงสุด max_query_show รูป)
-    """
-    support_x = episode["support_x"]       # [N*K, C, H, W]
-    query_x = episode["query_x"]           # [N*Q, C, H, W]
-    class_names = episode["class_names"]   # list ของชื่อคลาสยาว N
-
-    n_way = len(class_names)
-    k_shot = support_x.shape[0] // n_way
-    q_query = query_x.shape[0] // n_way
-    q_show = min(q_query, max_query_show)  # จำกัดจำนวนรูป Query ที่โชว์ไม่ให้กว้างล้นจอ
-
-    sorted_order = sorted(range(n_way), key=lambda i: class_names[i])
-
-    total_cols = k_shot + q_show
-    fig, axes = plt.subplots(
-      nrows=n_way,
-      ncols=total_cols,
-      figsize=(total_cols * 2.2, n_way * 2.4),
-    )
-
-    # ป้องกันกรณี n_way=1 หรือ total_cols=1 ที่ axes จะไม่เป็น 2D array
-    if n_way == 1:
-      axes = axes[None, :]
-    if total_cols == 1:
-      axes = axes[:, None]
-
-    for row_idx, cls_name in enumerate(sorted_order):
-      # 1. วาดรูปฝั่ง Support Set
-      for s_idx in range(k_shot):
-        img_tensor = support_x[row_idx * k_shot + s_idx]
-        # แปลง Tensor [C, H, W] -> Numpy [H, W, C] และ clip ค่าให้อยู่ในช่วง [0, 1]
-        img_np = img_tensor.permute(1, 2, 0).cpu().numpy().clip(0, 1)
-
-        ax = axes[row_idx, s_idx]
-        ax.imshow(img_np)
-        ax.set_xticks([])
-        ax.set_yticks([])
-
-        if row_idx == 0:
-          ax.set_title(f"Support {s_idx + 1}", fontsize=10, fontweight="bold", color="#1f77b4")
-        if s_idx == 0:
-          ax.set_ylabel(f"Label {row_idx}\n({cls_name})", fontsize=10, fontweight="bold")
-
-      # 2. วาดรูปฝั่ง Query Set (เลือกมาโชว์ q_show รูปแรก)
-      for q_idx in range(q_show):
-        col_idx = k_shot + q_idx
-        img_tensor = query_x[row_idx * q_query + q_idx]
-        img_np = img_tensor.permute(1, 2, 0).cpu().numpy().clip(0, 1)
-
-        ax = axes[row_idx, col_idx]
-        ax.imshow(img_np)
-        ax.set_xticks([])
-        ax.set_yticks([])
-
-        # ใส่กรอบสีส้มบางๆ ให้แยกฝั่ง Query ออกจาก Support ชัดเจน
-        for spine in ax.spines.values():
-          spine.set_edgecolor("#ff7f0e")
-          spine.set_linewidth(1.5)
-
-        if row_idx == 0:
-          ax.set_title(f"Query {q_idx + 1}", fontsize=10, fontweight="bold", color="#ff7f0e")
-
-    plt.suptitle(
-      f"Episode Preview: {n_way}-Way {k_shot}-Shot (Showing {q_show}/{q_query} Queries)",
-      fontsize=13,
-      fontweight="bold",
-    )
-    plt.tight_layout()
-
-    if save_path:
-      Path(save_path).parent.mkdir(parents=True, exist_ok=True)
-      plt.savefig(save_path, bbox_inches="tight")
-      print(f"Saved episode preview to: {save_path}")
-
-    plt.show()
 
   plot_episode(episode, max_query_show=5)
