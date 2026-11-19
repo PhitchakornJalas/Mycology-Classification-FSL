@@ -159,4 +159,4 @@ if __name__ == "__main__":
     out_dim=256,
   ).to(device)
 
-  pipeline.summary(n_way=6, k_shot=5)
+  pipeline.summary(n_way=3, k_shot=2)
