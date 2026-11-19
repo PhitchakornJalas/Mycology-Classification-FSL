@@ -8,6 +8,15 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 
 def build_registry(args):
+  """Scan dataset directory, map class labels to integer indices, and optionally export registry files.
+
+  Args:
+    args: Parsed command-line arguments containing 'dataset', 'filename', and 'export'.
+
+  Raises:
+    FileNotFoundError: If the dataset directory does not exist or contains no image files.
+  """
+  
   REGISTRY_PATH = DATA_DIR / args.filename
   REGISTRY_PATH.parent.mkdir(parents=True, exist_ok=True)
 
