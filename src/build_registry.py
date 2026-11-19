@@ -1,6 +1,7 @@
 from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
+import json
 import argparse
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -31,6 +32,10 @@ def build_registry(args):
   df = pd.DataFrame(records)
   if args.export:
     df.to_csv(REGISTRY_PATH, index=False)
+    with open(f"{DATA_DIR}/label2index_{Path(args.filename).stem}.json", "w") as f:
+      json.dump(label2index, f)
+    with open(f"{DATA_DIR}/index2label_{Path(args.filename).stem}.json", "w") as f:
+      json.dump(index2label, f)
     print(f"\n[SAVED] {REGISTRY_PATH}")
   
   print(f"({len(df)} rows)")
@@ -41,7 +46,7 @@ def build_registry(args):
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description="Build Regitry File")
   parser.add_argument("--dataset", type=str, default="", help="Name of dataset folder")
-  parser.add_argument("--filename", type=str, default="registry", help="Name of registry file .csv")
+  parser.add_argument("--filename", type=str, default="registry.csv", help="Name of registry file .csv")
   parser.add_argument("--export", type=bool, default=False, help="Enable export=True if you want to create a new registry")
 
   args = parser.parse_args()
