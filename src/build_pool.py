@@ -47,7 +47,7 @@ def build_pools(args):
     print(f"Saved pools to: {output_path}")
 
 if __name__ == "__main__":
-  parser = argparse.ArgumentParser(description="Split Data")
+  parser = argparse.ArgumentParser(description="Build Episodic Data Pools from Split CSVs")
   parser.add_argument("--filename", type=str, default="registry.csv", help="Name of registry file .csv")
   parser.add_argument("--export", type=bool, default=False, help="Enable export=True if you want to create a new registry")
 
