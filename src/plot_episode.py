@@ -112,7 +112,7 @@ if __name__ == "__main__":
   parser.add_argument("--filename", type=str, default="registry.csv", help="Name of registry file .csv")
   parser.add_argument("--n_way", type=int, default=5, help="Number of classes per episode")
   parser.add_argument("--k_shot", type=int, default=5, help="Number of images per class per episode")
-  parser.add_argument("--export", type=bool, default=False, help="Enable export=True to save episode preview plots")
+  parser.add_argument("--export", action="store_true", help="Enable to save episode preview plots")
 
   args = parser.parse_args()
   plot_episode(args)
