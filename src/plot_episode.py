@@ -17,6 +17,11 @@ def plot_episode(args) -> None:
   POOL_PATH = PROJECT_ROOT / "data" / f"pools_{stem}.json"
   PLOT_PATH = PROJECT_ROOT / "plots"
 
+  simple_transform = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+  ])
+
   train_dataset = EpisodicDataset(
     pool_json_path=POOL_PATH,
     split="train",
@@ -24,7 +29,7 @@ def plot_episode(args) -> None:
     n_way=args.n_way,
     k_shot=args.k_shot,
     episodes_per_epoch=500,
-    transform=transforms.ToTensor(),
+    transform=simple_transform,
     seed=None,
   )
 
@@ -35,7 +40,7 @@ def plot_episode(args) -> None:
     n_way=args.n_way,
     k_shot=args.k_shot,
     episodes_per_epoch=100,
-    transform=transforms.ToTensor(),
+    transform=simple_transform,
     seed=224,
   )
 
