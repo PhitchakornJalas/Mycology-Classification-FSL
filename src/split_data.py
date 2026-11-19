@@ -88,7 +88,7 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser(description="Split Data")
   parser.add_argument("--filename", type=str, default="registry.csv", help="Name of registry file .csv")
   parser.add_argument("--seed", type=int, default=224, help="Random seed for reproducibility")
-  parser.add_argument("--export", type=bool, default=False, help="Enable export=True if you want to create a new registry")
+  parser.add_argument("--export", type=bool, default=False, help="Enable export=True if you want to create a new train/val/test")
 
   args = parser.parse_args()
   split_data(args)
