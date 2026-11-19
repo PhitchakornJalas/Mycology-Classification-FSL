@@ -70,7 +70,7 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser(description="Build Regitry File")
   parser.add_argument("--dataset", type=str, default="openfungi", help="Name of dataset folder")
   parser.add_argument("--filename", type=str, default="registry.csv", help="Name of registry file .csv")
-  parser.add_argument("--export", type=bool, default=False, help="Enable export=True if you want to create a new registry")
+  parser.add_argument("--export", action="store_true", help="Enable if you want to create a new registry")
 
   args = parser.parse_args()
   build_registry(args)
