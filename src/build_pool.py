@@ -69,7 +69,7 @@ def build_pools(args):
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description="Build Episodic Data Pools from Split CSVs")
   parser.add_argument("--filename", type=str, default="registry.csv", help="Name of registry file .csv")
-  parser.add_argument("--export", type=bool, default=False, help="Enable export=True if you want to create a new pool")
+  parser.add_argument("--export", action="store_true", help="Enable export=True if you want to create a new pool")
 
   args = parser.parse_args()
   build_pools(args)
