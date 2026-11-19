@@ -1,5 +1,6 @@
 import torch
 from torchvision import transforms
+from torchvision.transforms import InterpolationMode
 
 # Standard ImageNet normalization statistics
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
@@ -13,7 +14,7 @@ class ImageTransformBuilder:
 
   def __init__(
     self,
-    img_size: int = 84,
+    img_size: int = 224,
     mean: tuple[float, float, float] = IMAGENET_MEAN,
     std: tuple[float, float, float] = IMAGENET_STD,
     use_augmentation: bool = True,
@@ -44,9 +45,16 @@ class ImageTransformBuilder:
 
     if self.use_augmentation:
       ops.extend([
-        transforms.RandomResizedCrop(self.img_size, scale=(0.8, 1.0)),
+        transforms.RandomResizedCrop(
+          self.img_size,
+          scale=(0.75, 1.0),
+          ratio=(0.9, 1.1),
+          interpolation=InterpolationMode.BICUBIC,
+        ),
         transforms.RandomHorizontalFlip(p=0.5),
-        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
+        transforms.RandomVerticalFlip(p=0.5),
+        transforms.RandomRotation(degrees=180, interpolation=InterpolationMode.BICUBIC),
+        transforms.ColorJitter(brightness=0.15, contrast=0.15, saturation=0.05, hue=0.0),
       ])
     else:
       ops.append(transforms.Resize((self.img_size, self.img_size)))
@@ -69,7 +77,7 @@ class ImageTransformBuilder:
 
     ops = [
       transforms.Resize(resize_dim),
-      transforms.CenterCrop(self.img_size),
+      transforms.Resize((self.img_size, self.img_size), interpolation=InterpolationMode.BICUBIC),
       transforms.ToTensor(),
     ]
 
