@@ -1,4 +1,3 @@
-from typing import Any
 import torch
 import torch.nn as nn
 
@@ -45,7 +44,7 @@ class FewShotContrastivePipeline(nn.Module):
     # Stage 4: Supervised Contrastive Loss
     self.criterion = SupConLoss()
 
-  def to(self, *args: Any, **kwargs: Any) -> "FewShotContrastivePipeline":
+  def to(self, *args, **kwargs) -> "FewShotContrastivePipeline":
     """Keep Stage 1 pinned to CPU while moving Stages 2-4 to the target device."""
     self.embedder.to(*args, **kwargs)
     self.head = self.head.to(*args, **kwargs)
