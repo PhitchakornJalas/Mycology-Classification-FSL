@@ -24,7 +24,7 @@ def load_history(stem: str) -> pd.DataFrame:
   )
 
 
-def plot_history(args: argparse.Namespace) -> None:
+def plot_history(args) -> None:
   """Plot Train vs Val Loss and Accuracy curves and highlight the best checkpoint epoch."""
   stem = Path(args.filename).stem
   df = load_history(stem)
