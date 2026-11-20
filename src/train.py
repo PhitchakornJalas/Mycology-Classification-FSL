@@ -174,7 +174,7 @@ def validate(
   return total_loss / num_episodes, total_acc / num_episodes
 
 
-def main(args: argparse.Namespace) -> None:
+def main(args) -> None:
   if args.k_shot < 2:
     raise ValueError("SupConLoss and Leave-One-Out validation require k_shot >= 2.")
 
