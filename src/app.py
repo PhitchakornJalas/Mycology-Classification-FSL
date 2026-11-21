@@ -60,7 +60,7 @@ def load_inference_engine(bundle_path: Path):
   @torch.no_grad()
   def predict_plate(image: Image.Image | None) -> tuple[dict[str, float], str]:
     if image is None:
-      return {}, "กรุณาอัปโหลดภาพจานเพาะเชื้อ (Agar Plate) หรือถ่ายภาพจากกล้อง"
+      return {}, "กรุณาอัปโหลดภาพจานเพาะเชื้อ หรือถ่ายภาพจากกล้อง"
 
     img_tensor = eval_tf(image.convert("RGB")).unsqueeze(0)  # [1, 3, H, W]
     backbone_emb = pipeline.embedder(img_tensor).to(device)
@@ -107,8 +107,8 @@ def main() -> None:
 
   with gr.Blocks(title="Fungal Colony Plate Classifier (Few-Shot AI)") as demo:
     gr.Markdown(
-      "# 🧫 Fungal Colony Plate Classifier (Few-Shot AI Demo)\n"
-      "อัปโหลดภาพจานเพาะเชื้อ (Agar Plate) หรือกดไอคอนกล้องเพื่อถ่ายภาพสด ระบบจะเปรียบเทียบกับ Prototypes และแสดง **Top-3 Confidence Score**"
+      "# Mycology-Classification-FSL\n"
+      "อัปโหลดภาพจานเพาะเชื้อ หรือกดไอคอนกล้องเพื่อถ่ายภาพ ระบบจะเปรียบเทียบกับ Prototypes และแสดง **Top-3 Confidence Score**"
     )
 
     with gr.Row():
