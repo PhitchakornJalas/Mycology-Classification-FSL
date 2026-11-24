@@ -128,17 +128,23 @@ def evaluate(args: argparse.Namespace) -> None:
 
   if not POOL_PATH.exists():
     raise FileNotFoundError(f"Pool JSON not found: {POOL_PATH}")
-  if not ckpt_path.exists():
-    raise FileNotFoundError(f"Checkpoint not found: {ckpt_path}")
 
   device = torch.device("cpu")
-  ckpt = torch.load(ckpt_path, map_location=device, weights_only=True)
-
-  model_id = ckpt.get("model_id", "google/embeddinggemma-2")
-  img_size = int(ckpt.get("img_size", 224))
-  hidden_dim = int(ckpt.get("hidden_dim", 512))
-  out_dim = int(ckpt.get("out_dim", 256))
-  temperature = float(ckpt.get("temperature", 0.07))
+  if args.baseline:
+    model_id = "google/embeddinggemma-2"
+    img_size = 224
+    hidden_dim = 512
+    out_dim = 256
+    temperature = 0.07
+  else:
+    if not ckpt_path.exists():
+      raise FileNotFoundError(f"Checkpoint not found: {ckpt_path}")
+    ckpt = torch.load(ckpt_path, map_location=device, weights_only=True)
+    model_id = ckpt.get("model_id", "google/embeddinggemma-2")
+    img_size = int(ckpt.get("img_size", 224))
+    hidden_dim = int(ckpt.get("hidden_dim", 512))
+    out_dim = int(ckpt.get("out_dim", 256))
+    temperature = float(ckpt.get("temperature", 0.07))
 
   img_size, mean, std = get_model_preprocess_params(model_id)
   print(f"Preprocess -> Size: {img_size}x{img_size} | Mean: {mean} | Std: {std}")
@@ -170,7 +176,10 @@ def evaluate(args: argparse.Namespace) -> None:
 
   print("=" * 95)
   print(f"EPISODIC TEST EVALUATION ({stem}) | {args.n_way}-way {args.k_shot}-shot ({args.test_episodes} episodes)")
-  print(f"Checkpoint : {ckpt_path.name} (Epoch {ckpt.get('epoch', '?')} | Val Acc: {ckpt.get('val_acc', 0.0):.4f})")
+  if args.baseline:
+    print(f"Checkpoint : None (Zero-Shot Raw Backbone: {model_id})")
+  else:
+    print(f"Checkpoint : {ckpt_path.name} (Epoch {ckpt.get('epoch', '?')} | Val Acc: {ckpt.get('val_acc', 0.0):.4f})")
   print("=" * 95)
 
   pipeline = FewShotContrastivePipeline(
@@ -181,7 +190,8 @@ def evaluate(args: argparse.Namespace) -> None:
     dropout=0.0,
     temperature=temperature,
   ).to(device)
-  pipeline.head.load_state_dict(ckpt["head_state_dict"])
+  if not args.baseline:
+    pipeline.head.load_state_dict(ckpt["head_state_dict"])
   pipeline.eval()
 
   episode_accs = []
@@ -195,8 +205,11 @@ def evaluate(args: argparse.Namespace) -> None:
 
     ep_global_labels = [class_to_idx[str(c)] for c in sampled_classes]
 
-    backbone_embs = pipeline.embedder(images).to(device)
-    z = pipeline.head(backbone_embs)  # [N*K, D]
+    backbone_embs: torch.Tensor = pipeline.embedder(images).to(device)
+    if args.baseline:
+      z: torch.Tensor = F.normalize(backbone_embs, p=2, dim=-1)
+    else:
+      z = pipeline.head(backbone_embs)
 
     # Reshape into [N_way, K_shot, D]
     z_grid = z.view(args.n_way, args.k_shot, -1)
@@ -254,14 +267,15 @@ def evaluate(args: argparse.Namespace) -> None:
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     PLOT_DIR.mkdir(parents=True, exist_ok=True)
 
-    metrics_csv = LOG_DIR / f"eval_per_class_{stem}.csv"
-    summary_json = LOG_DIR / f"eval_summary_{stem}.json"
-    cm_plot_path = PLOT_DIR / f"cm_{stem}.svg"
+    out_suffix = f"{stem}_baseline" if args.baseline else stem
+    metrics_csv = LOG_DIR / f"eval_per_class_{out_suffix}.csv"
+    summary_json = LOG_DIR / f"eval_summary_{out_suffix}.json"
+    cm_plot_path = PLOT_DIR / f"cm_{out_suffix}.svg"
 
     per_class_df.to_csv(metrics_csv, index=False)
     payload = {
       "pool_source": str(POOL_PATH),
-      "checkpoint": str(ckpt_path),
+      "checkpoint": None if args.baseline else str(ckpt_path),
       "n_way": args.n_way,
       "k_shot": args.k_shot,
       "test_episodes": args.test_episodes,
@@ -293,8 +307,9 @@ def evaluate(args: argparse.Namespace) -> None:
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description="Episodic Few-Shot Evaluation on Test Split")
-  parser.add_argument("--filename", type=str, default="registry.csv", help="Registry filename (e.g., registry.csv)")
+  parser.add_argument("--filename", type=str, default="registry.csv", help="Name of registry file .csv")
   parser.add_argument("--checkpoint", type=str, default=None, help="Path to .pth checkpoint")
+  parser.add_argument("--baseline", action="store_true", help="Evaluate raw frozen backbone without trained projection head")
   parser.add_argument("--n_way", type=int, default=3, help="Number of classes per test episode")
   parser.add_argument("--k_shot", type=int, default=2, help="Number of shots per class (must be >= 2)")
   parser.add_argument("--test_episodes", type=int, default=60, help="Number of test episodes to evaluate")
