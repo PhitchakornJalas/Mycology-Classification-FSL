@@ -234,7 +234,6 @@ __marimo__/
 
 # ========== Train model ==========
 *.pt
-*.pth
 *.pwf
 # *.onnx
 *.h5
@@ -243,7 +242,6 @@ __marimo__/
 *.pb
 *.ckpt
 *.weights
-checkpoints/
 saved_models/
 models/
 
@@ -266,4 +264,3 @@ mlruns/
 lightning_logs/
 
 outputs/
-plots/
